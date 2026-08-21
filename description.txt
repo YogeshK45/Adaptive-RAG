@@ -1,0 +1,3 @@
+**Tool Instruction**
+
+This retriever is dedicated exclusively to the uploaded **resume**. Use it only to answer questions that can be answered directly from the content of that resume. Do not use the tool for any other documents, external information, or unrelated queries.
