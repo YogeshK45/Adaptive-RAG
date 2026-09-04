@@ -1,0 +1,45 @@
+# Virtual environment and local Python cache
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+app.log
+
+# IDE & OS specific files
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Git files
+.git/
+.gitignore
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Testing and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
