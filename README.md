@@ -7,6 +7,8 @@
 [![Embeddings](https://img.shields.io/badge/Embeddings-MiniLM--L6--v2%20(384d)-yellow.svg)](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
 [![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-purple.svg)](https://qdrant.tech/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Chat%20History-brightgreen.svg)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF.svg?logo=github-actions&logoColor=white)](https://github.com/features/actions)
 
 ## 📋 Overview
 
@@ -55,6 +57,10 @@ The multi-turn conversation context is persisted in **MongoDB**, and workflows a
 ### ⚡ API-First Architecture (FastAPI)
 - **High-Performance REST Backend**: Fully asynchronous endpoints on `http://localhost:8000`.
 - **Interactive Documentation**: Auto-generated Swagger UI at `/docs`.
+
+### 🐳 Containerization & CI/CD
+- **Production Docker Image**: Lightweight Debian-based container with pre-cached embedding weights.
+- **Automated CI/CD Pipeline**: GitHub Actions workflow automatically builds, tests, and publishes images to Docker Hub on every push.
 
 ---
 
@@ -125,6 +131,9 @@ The multi-turn conversation context is persisted in **MongoDB**, and workflows a
 
 ```
 Adaptive-Rag/
+├── .github/
+│   └── workflows/
+│       └── docker.yml                    # GitHub Actions CI/CD workflow
 ├── src/                                  # Backend application source code
 │   ├── main.py                           # FastAPI application entry point & root route
 │   ├── api/                              # REST API endpoints
@@ -165,6 +174,8 @@ Adaptive-Rag/
 │   └── utils/
 │       └── api_client.py                 # Frontend HTTP client connecting to FastAPI (port 8000)
 │
+├── Dockerfile                            # Production Docker image specification
+├── .dockerignore                         # Files excluded from Docker build context
 ├── requirements.txt                      # Project dependencies
 ├── .env                                  # Environment variables configuration
 └── README.md                             # Project documentation
@@ -240,18 +251,19 @@ Adaptive-Rag/
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-- **Python**: `3.9` or higher (tested with `Python 3.13`)
-- **MongoDB**: Installed and running locally (`mongodb://localhost:27017`) or via Docker/Atlas.
-- **Qdrant**: Qdrant Cloud cluster or local instance (`http://localhost:6333`).
-- **Groq API Key**: Obtain a free API key from [Groq Console](https://console.groq.com/).
-- **Tavily API Key**: Obtain a search API key from [Tavily AI](https://tavily.com/).
+- **Python**: `3.9` or higher (tested with `Python 3.11` / `Python 3.13`)
+- **Docker**: Docker Engine or Docker Desktop (optional, for containerized run)
+- **MongoDB**: Local MongoDB instance (`mongodb://localhost:27017`) or MongoDB Atlas
+- **Qdrant**: Qdrant Cloud cluster or local container (`http://localhost:6333`)
+- **Groq API Key**: Free API key from [Groq Console](https://console.groq.com/)
+- **Tavily API Key**: Search API key from [Tavily AI](https://tavily.com/)
 
-### 2. Installation
+### 2. Installation (Local Virtual Environment)
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/dhruvsinghal09/Adaptive-Rag.git
-cd Adaptive-Rag
+git clone https://github.com/YogeshK45/Adaptive-RAG.git
+cd Adaptive-RAG
 
 # 2. Create and activate a Python virtual environment
 python -m venv venv
@@ -287,7 +299,7 @@ RUST_BASE_URL=http://localhost:8000/api
 PYTHON_BASE_URL=http://localhost:8000
 ```
 
-### 4. Running the Application
+### 4. Running Locally
 
 #### Terminal 1 — Start the FastAPI Backend:
 ```bash
@@ -305,6 +317,91 @@ streamlit run streamlit_app/home.py
 
 ---
 
+## 🐳 Docker Setup
+
+The project is fully containerized with Docker for consistent, reproducible execution across local environments and cloud runners.
+
+### Key Components:
+- **`Dockerfile`**: Builds a lightweight container on top of `python:3.11-slim`, installs system build tools and SSL certificates, pre-caches the Hugging Face `sentence-transformers/all-MiniLM-L6-v2` model weights during build to eliminate startup latency, and exposes port `8000`.
+- **`.dockerignore`**: Excludes local virtual environments (`venv/`), secrets (`.env`), cache files (`__pycache__/`), logs, and Git metadata to keep images secure and lightweight.
+
+### 1. Build the Docker Image
+```bash
+docker build -t adaptive-rag:latest .
+```
+
+### 2. Run the Container Locally
+
+#### Run FastAPI Backend (Port 8000):
+```bash
+docker run -d \
+  --name adaptive-rag-app \
+  -p 8000:8000 \
+  --env-file .env \
+  adaptive-rag:latest
+```
+
+*Access the running backend:*
+- **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **API Root**: [http://localhost:8000/](http://localhost:8000/)
+
+#### Run Streamlit Frontend (Port 8501):
+```bash
+docker run -d \
+  --name adaptive-rag-ui \
+  -p 8501:8501 \
+  --env-file .env \
+  adaptive-rag:latest \
+  streamlit run streamlit_app/home.py --server.port 8501 --server.address 0.0.0.0
+```
+
+*Access the web UI:*
+- **Streamlit Interface**: [http://localhost:8501](http://localhost:8501)
+
+#### Manage Containers:
+```bash
+# View running containers
+docker ps
+
+# Check container logs
+docker logs -f adaptive-rag-app
+
+# Stop and remove containers
+docker stop adaptive-rag-app && docker rm adaptive-rag-app
+```
+
+---
+
+## 🔄 CI/CD Pipeline
+
+The repository includes an automated Continuous Integration and Continuous Delivery (CI/CD) workflow implemented using **GitHub Actions**.
+
+### Pipeline Flow:
+```
+┌─────────────────┐       ┌──────────────────────┐       ┌──────────────────────┐       ┌──────────────────────┐
+│   Git Push to   │ ───►  │    GitHub Actions    │ ───►  │     Docker Build     │ ───►  │      Docker Hub      │
+│   main Branch   │       │   Runner (Ubuntu)    │       │ (Pre-cached Weights) │       │   Container Registry │
+└─────────────────┘       └──────────────────────┘       └──────────────────────┘       └──────────────────────┘
+```
+
+### Workflow Features:
+1. **Automated Triggers**: The pipeline automatically triggers on every `push` to the `main` branch and supports manual execution via `workflow_dispatch`.
+2. **Build Isolation**: Uses `docker/setup-buildx-action` to build the Docker image in an isolated environment.
+3. **Layer Caching**: Leverages GitHub Actions cache (`type=gha`) to cache dependencies and model layers, accelerating subsequent build runs.
+4. **Automated Registry Push**: Securely logs into Docker Hub using encrypted repository secrets and publishes the updated image.
+
+### Required GitHub Secrets:
+To enable automated deployment to Docker Hub, configure the following secrets in your repository settings (**Settings** → **Secrets and variables** → **Actions**):
+
+| Secret Name | Purpose |
+|---|---|
+| `DOCKERHUB_USERNAME` | Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub Personal Access Token (Read & Write permissions) |
+
+The workflow definition is located at [`.github/workflows/docker.yml`](file:///Users/yogeshrajput/Desktop/Adaptive-Rag/.github/workflows/docker.yml).
+
+---
+
 ## 🛠️ Technology Stack
 
 | Layer | Technology | Details |
@@ -318,6 +415,8 @@ streamlit run streamlit_app/home.py
 | **Web Search** | **Tavily AI** | Real-time search API integration |
 | **Backend API** | **FastAPI + Uvicorn** | Asynchronous REST endpoints |
 | **Frontend UI** | **Streamlit** | Multi-page web chat application |
+| **Containerization** | **Docker** | Multi-stage image with pre-cached model weights |
+| **CI/CD Automation** | **GitHub Actions** | Automated build and push to Docker Hub registry |
 
 ---
 
@@ -334,6 +433,9 @@ A: When a question arrives, the `query_classifier` node uses structured output t
 
 **Q: Where is conversation history saved?**  
 A: In MongoDB inside the `chat_history` collection of the `adaptive_rag` database, keyed by `session_id`.
+
+**Q: How are embedding model weights handled in Docker?**  
+A: The weights are downloaded and cached during the Docker image build process (`RUN python -c ...`), ensuring the container starts up immediately without downloading weights on every boot.
 
 ---
 
